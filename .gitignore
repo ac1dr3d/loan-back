@@ -1,0 +1,53 @@
+## Build artifacts
+bin/
+obj/
+out/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## VS Code settings
+.vscode/
+
+## Rider settings
+.idea/
+
+## ASP.NET temporary files
+**/App_Data/
+*.dbmdl
+
+## NuGet
+*.nupkg
+*.snupkg
+*.nuspec
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Logs
+*.log
+logs/
+*.tlog
+
+## Secrets and configs
+appsettings.Development.json
+appsettings.*.local.json
+secrets.json
+
+## Dotnet tool artifacts
+.dotnet_tool/
+
+## Auto-generated files
+Generated_Code/
+
+## Others
+_ReSharper*/
+*.vs/
+*.DS_Store
+Thumbs.db
+
