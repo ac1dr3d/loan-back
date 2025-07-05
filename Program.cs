@@ -1,6 +1,9 @@
 using Serilog;
 using FluentMigrator.Runner;
 using LoanBack.Helpers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +22,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-string fullConnFromConfig = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+string fullConnFromConfig = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string is not configured.");
 string dbName = "loan_app";
 
 var (serverConn, dbConn) = DbConnectionHelper.BuildBoth(fullConnFromConfig, dbName);
@@ -29,13 +32,36 @@ var (serverConn, dbConn) = DbConnectionHelper.BuildBoth(fullConnFromConfig, dbNa
 DatabaseBootstrapper.EnsureDatabase(serverConn, dbName);
 
 
-// Run FluentMigrator with full connection string
+// Run FluentMigrator
 builder.Services.AddFluentMigratorCore()
 .ConfigureRunner(rb => rb
     .AddMySql5()
     .WithGlobalConnectionString(dbConn)
     .ScanIn(typeof(CreateUsersTable).Assembly).For.Migrations())
 .AddLogging(lb => lb.AddFluentMigratorConsole());
+
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")))
+        };
+    });
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddAuthorization();
+
 
 
 var app = builder.Build();
@@ -59,7 +85,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// app.UseAuthorization();
+app.UseAuthorization();
 
 app.MapControllers();
 
