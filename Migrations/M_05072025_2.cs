@@ -1,11 +1,12 @@
 using FluentMigrator;
 
-[Migration(202507061000)]
+[Migration(202507062000)]
 public class CreateUserProcedures : Migration
 {
     public override void Up()
     {
         Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_GetUserByEmail;
             CREATE PROCEDURE sp_GetUserByEmail(IN userEmail VARCHAR(255))
             BEGIN
                 SELECT * FROM Users WHERE Email = userEmail LIMIT 1;
@@ -13,6 +14,7 @@ public class CreateUserProcedures : Migration
         ");
 
         Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_EmailExists;
             CREATE PROCEDURE sp_EmailExists(IN userEmail VARCHAR(255))
             BEGIN
                 SELECT COUNT(1) FROM Users WHERE Email = userEmail;
@@ -20,6 +22,7 @@ public class CreateUserProcedures : Migration
         ");
 
         Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_CreateUser;
             CREATE PROCEDURE sp_CreateUser(
                 IN firstName VARCHAR(100),
                 IN lastName VARCHAR(100),

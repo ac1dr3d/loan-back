@@ -64,11 +64,39 @@ builder.Services.AddAuthorization();
 
 
 
+
 var app = builder.Build();
+
+
 
 using (var scope = app.Services.CreateScope())
 {
     var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+
+    // Manual migration trigger via CLI
+    if (args.Contains("migrate"))
+    {
+        runner.MigrateUp();
+
+        Console.WriteLine("Migrations complete.");
+        return;
+    }
+
+
+    // Manual migration reset trigger via CLI
+    if (args.Contains("migrate:reset"))
+    {
+        Console.WriteLine("Rolling back all migrations...");
+        runner.MigrateDown(0); // Roll back to version 0
+
+        Console.WriteLine("Reapplying all migrations...");
+        runner.MigrateUp(); // Apply all
+
+        Console.WriteLine("Database reset complete.");
+        return;
+    }
+
+    // Automatic migration
     runner.MigrateUp();
 }
 

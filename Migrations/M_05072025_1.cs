@@ -1,6 +1,6 @@
 using FluentMigrator;
 
-[Migration(202507051300)]
+[Migration(202507061000)]
 public class CreateUsersTable : Migration
 {
     public override void Up()
