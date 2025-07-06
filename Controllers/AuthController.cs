@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using LoanBack.Models.Requests;
+using Microsoft.AspNetCore.Authorization;
+using LoanBack.Models.Responses;
 
 namespace LoanBack.Controllers;
 
@@ -40,6 +42,23 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { error = ex.Message });
         }
+    }
+
+    [HttpGet("check-auth")]
+    [Authorize]
+    public IActionResult CheckAuth()
+    {
+        var email = User.Claims
+            .FirstOrDefault(c => c.Type.Split('/').Last() == "emailaddress")
+            ?.Value;
+        var role = User.Claims
+            .FirstOrDefault(c => c.Type.Split('/').Last() == "role")
+            ?.Value;
+        return Ok(new AuthCheck
+        {
+            Email = email ?? throw new Exception("Email not found"),
+            Role = role ?? throw new Exception("Role not found")
+        });
     }
 }
 

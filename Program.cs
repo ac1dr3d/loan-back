@@ -62,6 +62,19 @@ builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCors", policy =>
+    {
+        policy.WithOrigins("http://localhost:1841") // Ext JS dev address
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+
+
 
 
 
@@ -109,6 +122,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseCors("DevCors");
 }
 
 app.UseHttpsRedirection();
@@ -116,6 +130,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
 
 app.Run();
 
