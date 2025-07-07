@@ -31,7 +31,7 @@ public class LoanController : ControllerBase
             StatusId = 1, // assuming 1 = New or Requested
             Amount = request.Amount,
             Currency = request.Currency,
-            MonthlyPeriod = request.MonthlyPeriod,
+            MonthsTerm = request.MonthsTerm,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -83,6 +83,14 @@ public class LoanController : ControllerBase
     public async Task<IActionResult> GetLoanTypes()
     {
         var types = await _repo.GetLoanTypesAsync();
+        return Ok(types);
+    }
+
+    [HttpGet("currencies")]
+    [Authorize]
+    public async Task<IActionResult> GetLoanCurrencies()
+    {
+        var types = await _repo.GetLoanCurrenciesAsync();
         return Ok(types);
     }
 

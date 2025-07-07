@@ -8,7 +8,7 @@ public class Loan
     public int StatusId { get; set; }
     public decimal Amount { get; set; }
     public string Currency { get; set; } = string.Empty;
-    public int MonthlyPeriod { get; set; }
+    public int MonthsTerm { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public LoanType? LoanType { get; set; }

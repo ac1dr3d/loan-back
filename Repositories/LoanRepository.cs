@@ -31,7 +31,7 @@ public class LoanRepository : ILoanRepository
                 loan.StatusId,
                 loan.Amount,
                 loan.Currency,
-                loan.MonthlyPeriod,
+                loan.MonthsTerm,
                 loan.CreatedAt
             },
             commandType: CommandType.StoredProcedure);
@@ -95,6 +95,14 @@ public class LoanRepository : ILoanRepository
         using var conn = CreateConnection();
         return await conn.QueryAsync<LoanStatus>(
             "sp_GetLoanStatuses",
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task<IEnumerable<Currency>> GetLoanCurrenciesAsync()
+    {
+        using var conn = CreateConnection();
+        return await conn.QueryAsync<Currency>(
+            "sp_GetCurrencies",
             commandType: CommandType.StoredProcedure);
     }
 

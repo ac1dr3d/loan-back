@@ -1,6 +1,6 @@
 using FluentMigrator;
 
-[Migration(202507081200)]
+[Migration(202507072000)]
 public class CreateLoanProcedures : Migration
 {
     public override void Up()
@@ -12,13 +12,13 @@ public class CreateLoanProcedures : Migration
                 IN p_LoanTypeId INT,
                 IN p_StatusId INT,
                 IN p_Amount DECIMAL(10,2),
-                IN p_Currency VARCHAR(10),
-                IN p_MonthlyPeriod INT,
+                IN p_CurrencyId INT,
+                IN p_MonthsTerm INT,
                 IN p_CreatedAt DATETIME
             )
             BEGIN
-                INSERT INTO Loans (UserId, LoanTypeId, StatusId, Amount, Currency, MonthlyPeriod, CreatedAt)
-                VALUES (p_UserId, p_LoanTypeId, p_StatusId, p_Amount, p_Currency, p_MonthlyPeriod, p_CreatedAt);
+                INSERT INTO Loans (UserId, LoanTypeId, StatusId, Amount, CurrencyId, MonthsTerm, CreatedAt)
+                VALUES (p_UserId, p_LoanTypeId, p_StatusId, p_Amount, p_CurrencyId, p_MonthsTerm, p_CreatedAt);
                 SELECT LAST_INSERT_ID() AS NewLoanId;
             END;
         ");
@@ -27,10 +27,15 @@ public class CreateLoanProcedures : Migration
             DROP PROCEDURE IF EXISTS sp_GetLoansByUserId;
             CREATE PROCEDURE sp_GetLoansByUserId(IN p_UserId INT)
             BEGIN
-                SELECT l.*, t.Id AS LoanTypeId, t.Name AS LoanTypeName, s.Id AS StatusId, s.Name AS StatusName
+                SELECT 
+                    l.*, 
+                    t.Id AS LoanTypeId, t.Name AS LoanTypeName, 
+                    s.Id AS StatusId, s.Name AS StatusName,
+                    c.Id AS CurrencyId, c.Code AS CurrencyCode, c.Name AS CurrencyName
                 FROM Loans l
                 JOIN LoanTypes t ON l.LoanTypeId = t.Id
                 JOIN LoanStatuses s ON l.StatusId = s.Id
+                JOIN Currencies c ON l.CurrencyId = c.Id
                 WHERE l.UserId = p_UserId;
             END;
         ");
@@ -39,10 +44,15 @@ public class CreateLoanProcedures : Migration
             DROP PROCEDURE IF EXISTS sp_GetLoanById;
             CREATE PROCEDURE sp_GetLoanById(IN p_LoanId INT)
             BEGIN
-                SELECT l.*, t.Id AS LoanTypeId, t.Name AS LoanTypeName, s.Id AS StatusId, s.Name AS StatusName
+                SELECT 
+                    l.*, 
+                    t.Id AS LoanTypeId, t.Name AS LoanTypeName, 
+                    s.Id AS StatusId, s.Name AS StatusName,
+                    c.Id AS CurrencyId, c.Code AS CurrencyCode, c.Name AS CurrencyName
                 FROM Loans l
                 JOIN LoanTypes t ON l.LoanTypeId = t.Id
                 JOIN LoanStatuses s ON l.StatusId = s.Id
+                JOIN Currencies c ON l.CurrencyId = c.Id
                 WHERE l.Id = p_LoanId;
             END;
         ");
@@ -70,6 +80,14 @@ public class CreateLoanProcedures : Migration
                 SELECT * FROM LoanStatuses;
             END;
         ");
+
+        Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_GetCurrencies;
+            CREATE PROCEDURE sp_GetCurrencies()
+            BEGIN
+                SELECT * FROM Currencies;
+            END;
+        ");
     }
 
     public override void Down()
@@ -80,6 +98,7 @@ public class CreateLoanProcedures : Migration
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_UpdateLoanStatus;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLoanTypes;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLoanStatuses;");
+        Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetCurrencies;");
     }
 }
 
