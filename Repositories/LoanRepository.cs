@@ -109,5 +109,22 @@ public class LoanRepository : ILoanRepository
             commandType: CommandType.StoredProcedure);
     }
 
+    public async Task<int> UpdateAsync(Loan loan)
+    {
+        const string proc = "sp_UpdateLoan";
+
+        using var conn = CreateConnection();
+        var updatedId = await conn.ExecuteScalarAsync<int>(proc, new
+        {
+            p_Id = loan.Id,
+            p_LoanTypeId = loan.LoanTypeId,
+            p_Amount = loan.Amount,
+            p_CurrencyId = loan.CurrencyId,
+            p_MonthsTerm = loan.MonthsTerm
+        }, commandType: CommandType.StoredProcedure);
+
+        return updatedId;
+    }
+
 }
 

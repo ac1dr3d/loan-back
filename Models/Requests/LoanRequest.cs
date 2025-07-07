@@ -1,9 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LoanBack.Models.Requests;
 
 public class LoanRequest
 {
+
+    [JsonConverter(typeof(NullableIntJsonConverter))]
+    public int? Id { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "LoanTypeId is required.")]
     public int LoanTypeId { get; set; }
 

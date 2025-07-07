@@ -9,5 +9,6 @@ public interface ILoanRepository
     Task<IEnumerable<LoanType>> GetLoanTypesAsync();
     Task<IEnumerable<LoanStatus>> GetLoanStatusesAsync();
     Task<IEnumerable<Currency>> GetLoanCurrenciesAsync();
+    Task<int> UpdateAsync(Loan loan);
 }
 

@@ -63,6 +63,45 @@ public class LoanController : ControllerBase
         return Ok(loans);
     }
 
+    [HttpPut("update")]
+    [Authorize]
+    public async Task<IActionResult> Update([FromBody] LoanRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        if (request.Id <= 0 || request.Id == null)
+            return BadRequest(new { error = "Loan ID is required for update." });
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        var loanToUpdate = await _repo.GetByIdAsync(request.Id.Value);
+
+        if (loanToUpdate == null)
+            return NotFound(new { error = "Loan not found." });
+
+        if (loanToUpdate.StatusId != 1)
+            return BadRequest(new { error = "Loan is not in new status." });
+
+        if (loanToUpdate.UserId != userId)
+            return BadRequest(new { error = "Loan not found or not yours." });
+
+        var loan = new Loan
+        {
+            Id = request.Id.Value,
+            UserId = userId,
+            LoanTypeId = request.LoanTypeId,
+            Amount = request.Amount,
+            CurrencyId = request.CurrencyId,
+            MonthsTerm = request.MonthsTerm
+        };
+
+        var updatedLoanId = await _repo.UpdateAsync(loan);
+        return Ok(new { loanId = updatedLoanId });
+    }
+
     [HttpGet("{id}")]
     [Authorize]
     public async Task<IActionResult> GetById(int id)

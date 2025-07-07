@@ -89,6 +89,29 @@ public class CreateLoanProcedures : Migration
                 SELECT * FROM Currencies ORDER BY Id ASC;
             END;
         ");
+
+        Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_UpdateLoan;
+            CREATE PROCEDURE sp_UpdateLoan(
+                IN p_Id INT,
+                IN p_LoanTypeId INT,
+                IN p_Amount DECIMAL(10,2),
+                IN p_CurrencyId INT,
+                IN p_MonthsTerm INT
+            )
+            BEGIN
+                UPDATE Loans
+                SET 
+                    LoanTypeId = p_LoanTypeId,
+                    Amount = p_Amount,
+                    CurrencyId = p_CurrencyId,
+                    MonthsTerm = p_MonthsTerm
+                WHERE Id = p_Id;
+
+            SELECT p_Id AS UpdatedLoanId;
+            END;
+         ");
+
     }
 
     public override void Down()
@@ -100,6 +123,7 @@ public class CreateLoanProcedures : Migration
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLoanTypes;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLoanStatuses;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetCurrencies;");
+        Execute.Sql("DROP PROCEDURE IF EXISTS sp_UpdateLoan;");
     }
 }
 
