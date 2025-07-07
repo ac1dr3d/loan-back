@@ -3,6 +3,8 @@ using Dapper;
 using LoanBack.Models.Entities;
 using MySqlConnector;
 
+namespace LoanBack.Repositories;
+
 public class UserRepository : IUserRepository
 {
     private readonly IConfiguration _config;
@@ -14,10 +16,12 @@ public class UserRepository : IUserRepository
         _conn = _config.GetConnectionString("DefaultConnection");
     }
 
+    private IDbConnection CreateConnection() => new MySqlConnection(_conn);
+
 
     public async Task<User?> GetByEmailAsync(string email)
     {
-        using var db = new MySqlConnection(_conn);
+        using var db = CreateConnection();
         return await db.QueryFirstOrDefaultAsync<User>(
             "sp_GetUserByEmail",
             new { userEmail = email },
@@ -26,7 +30,7 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> EmailExistsAsync(string email)
     {
-        using var db = new MySqlConnection(_conn);
+        using var db = CreateConnection();
         var count = await db.ExecuteScalarAsync<int>(
             "sp_EmailExists",
             new { userEmail = email },
@@ -36,7 +40,7 @@ public class UserRepository : IUserRepository
 
     public async Task<int> CreateAsync(User user)
     {
-        using var db = new MySqlConnection(_conn);
+        using var db = CreateConnection();
         var parameters = new
         {
             firstName = user.FirstName,

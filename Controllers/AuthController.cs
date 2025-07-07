@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
 
     [HttpGet("check-auth")]
     [Authorize]
-    public IActionResult CheckAuth()
+    public async Task<IActionResult> CheckAuth([FromServices] IUserRepository userRepo)
     {
         var email = User.Claims
             .FirstOrDefault(c => c.Type.Split('/').Last() == "emailaddress")
@@ -54,10 +54,18 @@ public class AuthController : ControllerBase
         var role = User.Claims
             .FirstOrDefault(c => c.Type.Split('/').Last() == "role")
             ?.Value;
+
+        if (string.IsNullOrWhiteSpace(email))
+            return Unauthorized("Email claim not found.");
+
+        var user = await userRepo.GetByEmailAsync(email);
+        if (user == null)
+            return Unauthorized("User not found.");
+
         return Ok(new AuthCheck
         {
-            Email = email ?? throw new Exception("Email not found"),
-            Role = role ?? throw new Exception("Role not found")
+            Email = user.Email,
+            Role = user.Role ?? role ?? "User"
         });
     }
 }
