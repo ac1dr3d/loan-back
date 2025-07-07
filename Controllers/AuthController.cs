@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using LoanBack.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using LoanBack.Models.Responses;
+using System.Security.Claims;
 
 namespace LoanBack.Controllers;
 
@@ -48,12 +49,8 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CheckAuth([FromServices] IUserRepository userRepo)
     {
-        var email = User.Claims
-            .FirstOrDefault(c => c.Type.Split('/').Last() == "emailaddress")
-            ?.Value;
-        var role = User.Claims
-            .FirstOrDefault(c => c.Type.Split('/').Last() == "role")
-            ?.Value;
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var role = User.FindFirstValue(ClaimTypes.Role);
 
         if (string.IsNullOrWhiteSpace(email))
             return Unauthorized("Email claim not found.");

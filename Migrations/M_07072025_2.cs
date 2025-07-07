@@ -29,14 +29,15 @@ public class CreateLoanProcedures : Migration
             BEGIN
                 SELECT 
                     l.*, 
-                    t.Id AS LoanTypeId, t.Name AS LoanTypeName, 
-                    s.Id AS StatusId, s.Name AS StatusName,
-                    c.Id AS CurrencyId, c.Code AS CurrencyCode, c.Name AS CurrencyName
+                    t.Id AS LoanTypeId, t.Name AS Name, 
+                    s.Id AS StatusId, s.Name AS Name,
+                    c.Id AS CurrencyId, c.Code AS Code, c.Name AS Name 
                 FROM Loans l
                 JOIN LoanTypes t ON l.LoanTypeId = t.Id
                 JOIN LoanStatuses s ON l.StatusId = s.Id
                 JOIN Currencies c ON l.CurrencyId = c.Id
-                WHERE l.UserId = p_UserId;
+                WHERE l.UserId = p_UserId
+                ORDER BY l.Id DESC;
             END;
         ");
 
@@ -46,9 +47,9 @@ public class CreateLoanProcedures : Migration
             BEGIN
                 SELECT 
                     l.*, 
-                    t.Id AS LoanTypeId, t.Name AS LoanTypeName, 
-                    s.Id AS StatusId, s.Name AS StatusName,
-                    c.Id AS CurrencyId, c.Code AS CurrencyCode, c.Name AS CurrencyName
+                    t.Id AS LoanTypeId, t.Name AS Name, 
+                    s.Id AS StatusId, s.Name AS Name,
+                    c.Id AS CurrencyId, c.Code AS Code, c.Name AS Name 
                 FROM Loans l
                 JOIN LoanTypes t ON l.LoanTypeId = t.Id
                 JOIN LoanStatuses s ON l.StatusId = s.Id
@@ -69,7 +70,7 @@ public class CreateLoanProcedures : Migration
             DROP PROCEDURE IF EXISTS sp_GetLoanTypes;
             CREATE PROCEDURE sp_GetLoanTypes()
             BEGIN
-                SELECT * FROM LoanTypes;
+                SELECT * FROM LoanTypes ORDER BY Id ASC;
             END;
         ");
 
@@ -77,7 +78,7 @@ public class CreateLoanProcedures : Migration
             DROP PROCEDURE IF EXISTS sp_GetLoanStatuses;
             CREATE PROCEDURE sp_GetLoanStatuses()
             BEGIN
-                SELECT * FROM LoanStatuses;
+                SELECT * FROM LoanStatuses ORDER BY Id ASC;
             END;
         ");
 
@@ -85,7 +86,7 @@ public class CreateLoanProcedures : Migration
             DROP PROCEDURE IF EXISTS sp_GetCurrencies;
             CREATE PROCEDURE sp_GetCurrencies()
             BEGIN
-                SELECT * FROM Currencies;
+                SELECT * FROM Currencies ORDER BY Id ASC;
             END;
         ");
     }

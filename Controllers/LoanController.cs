@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using LoanBack.Models.Entities;
+using LoanBack.Models.Requests;
+using LoanBack.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +18,15 @@ public class LoanController : ControllerBase
         _repo = repo;
     }
 
-    [HttpPost]
+    [HttpPost("create")]
     [Authorize]
-    public async Task<IActionResult> Create([FromBody] Loan request)
+    public async Task<IActionResult> Create([FromBody] LoanRequest request)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Console.WriteLine(userIdStr);
         if (!int.TryParse(userIdStr, out var userId))
             return Unauthorized();
 
@@ -28,18 +34,24 @@ public class LoanController : ControllerBase
         {
             UserId = userId,
             LoanTypeId = request.LoanTypeId,
-            StatusId = 1, // assuming 1 = New or Requested
+            StatusId = 1, // e.g. "New"
             Amount = request.Amount,
-            Currency = request.Currency,
+            CurrencyId = request.CurrencyId,
             MonthsTerm = request.MonthsTerm,
             CreatedAt = DateTime.UtcNow
         };
 
         var loanId = await _repo.CreateAsync(loan);
-        return Ok(new { loanId });
+
+        return Ok(new LoanCreationResponse
+        {
+            LoanId = loanId
+        });
     }
 
-    [HttpGet]
+
+
+    [HttpGet("all")]
     [Authorize]
     public async Task<IActionResult> GetMyLoans()
     {

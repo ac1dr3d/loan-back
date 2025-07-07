@@ -26,32 +26,35 @@ public class LoanRepository : ILoanRepository
             "sp_CreateLoan",
             new
             {
-                loan.UserId,
-                loan.LoanTypeId,
-                loan.StatusId,
-                loan.Amount,
-                loan.Currency,
-                loan.MonthsTerm,
-                loan.CreatedAt
+                p_UserId = loan.UserId,
+                p_LoanTypeId = loan.LoanTypeId,
+                p_StatusId = loan.StatusId,
+                p_Amount = loan.Amount,
+                p_CurrencyId = loan.CurrencyId,
+                p_MonthsTerm = loan.MonthsTerm,
+                p_CreatedAt = loan.CreatedAt
             },
+
             commandType: CommandType.StoredProcedure);
     }
 
     public async Task<IEnumerable<Loan>> GetByUserIdAsync(int userId)
     {
         using var conn = CreateConnection();
-        var result = await conn.QueryAsync<Loan, LoanType, LoanStatus, Loan>(
+
+        var result = await conn.QueryAsync<Loan, LoanType, LoanStatus, Currency, Loan>(
             "sp_GetLoansByUserId",
-            (loan, type, status) =>
+            (loan, type, status, currency) =>
             {
                 loan.LoanType = type;
                 loan.LoanStatus = status;
+                loan.Currency = currency;
                 return loan;
             },
             new { p_UserId = userId },
-            splitOn: "LoanTypeId,StatusId",
-            commandType: CommandType.StoredProcedure);
-
+            splitOn: "LoanTypeId,StatusId,CurrencyId",
+            commandType: CommandType.StoredProcedure
+        );
         return result;
     }
 

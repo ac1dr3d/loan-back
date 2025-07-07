@@ -1,6 +1,6 @@
-namespace LoanBack.Models.Requests;
-
 using System.ComponentModel.DataAnnotations;
+
+namespace LoanBack.Models.Requests;
 
 public class LoginRequest
 {
