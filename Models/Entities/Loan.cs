@@ -1,13 +1,15 @@
+using LoanBack.Enums;
+
 namespace LoanBack.Models.Entities;
 
 public class Loan
 {
     public int Id { get; set; }
     public int UserId { get; set; }
-    public int LoanTypeId { get; set; }
-    public int StatusId { get; set; }
+    public LoanTypeEnum LoanTypeId { get; set; }
+    public LoanStatusEnum StatusId { get; set; }
     public decimal Amount { get; set; }
-    public int CurrencyId { get; set; }
+    public CurrencyEnum CurrencyId { get; set; }
     public int MonthsTerm { get; set; }
     public DateTime CreatedAt { get; set; }
 

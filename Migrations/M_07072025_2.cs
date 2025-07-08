@@ -112,6 +112,15 @@ public class CreateLoanProcedures : Migration
             END;
          ");
 
+
+        Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_DeleteLoan;
+            CREATE PROCEDURE sp_DeleteLoan(IN p_LoanId INT)
+            BEGIN
+                DELETE FROM Loans WHERE Id = p_LoanId;
+            END;
+        ");
+
     }
 
     public override void Down()
@@ -124,6 +133,7 @@ public class CreateLoanProcedures : Migration
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetLoanStatuses;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_GetCurrencies;");
         Execute.Sql("DROP PROCEDURE IF EXISTS sp_UpdateLoan;");
+        Execute.Sql("DROP PROCEDURE IF EXISTS sp_DeleteLoan;");
     }
 }
 

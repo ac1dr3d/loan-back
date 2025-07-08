@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using LoanBack.Enums;
 using LoanBack.Models.Entities;
 using LoanBack.Models.Requests;
 using LoanBack.Models.Responses;
@@ -33,10 +34,10 @@ public class LoanController : ControllerBase
         var loan = new Loan
         {
             UserId = userId,
-            LoanTypeId = request.LoanTypeId,
-            StatusId = 1, // e.g. "New"
+            LoanTypeId = (LoanTypeEnum)request.LoanTypeId,
+            StatusId = LoanStatusEnum.New,
             Amount = request.Amount,
-            CurrencyId = request.CurrencyId,
+            CurrencyId = (CurrencyEnum)request.CurrencyId,
             MonthsTerm = request.MonthsTerm,
             CreatedAt = DateTime.UtcNow
         };
@@ -73,33 +74,87 @@ public class LoanController : ControllerBase
         if (request.Id <= 0 || request.Id == null)
             return BadRequest(new { error = "Loan ID is required for update." });
 
+        await ValidateLoanOwnership(request.Id.Value, LoanStatusEnum.New);
+
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdStr, out var userId))
             return Unauthorized();
-
-        var loanToUpdate = await _repo.GetByIdAsync(request.Id.Value);
-
-        if (loanToUpdate == null)
-            return NotFound(new { error = "Loan not found." });
-
-        if (loanToUpdate.StatusId != 1)
-            return BadRequest(new { error = "Loan is not in new status." });
-
-        if (loanToUpdate.UserId != userId)
-            return BadRequest(new { error = "Loan not found or not yours." });
 
         var loan = new Loan
         {
             Id = request.Id.Value,
             UserId = userId,
-            LoanTypeId = request.LoanTypeId,
+            LoanTypeId = (LoanTypeEnum)request.LoanTypeId,
             Amount = request.Amount,
-            CurrencyId = request.CurrencyId,
+            CurrencyId = (CurrencyEnum)request.CurrencyId,
             MonthsTerm = request.MonthsTerm
         };
 
         var updatedLoanId = await _repo.UpdateAsync(loan);
-        return Ok(new { loanId = updatedLoanId });
+        return Ok(new LoanCreationResponse { LoanId = updatedLoanId, Message = "Loan updated successfully" });
+    }
+
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await ValidateLoanOwnership(id);
+
+        var success = await _repo.DeleteAsync(id);
+        if (!success)
+            return NotFound(new { error = "Loan not found or could not be deleted." });
+
+        return Ok(new LoanDeletionResponse { Deleted = success, LoanId = id });
+    }
+
+    [HttpPut("{id}/send-loan-request")]
+    [Authorize]
+    public async Task<IActionResult> SendLoanRequest(int id)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        await _repo.UpdateStatusAsync(id, LoanStatusEnum.Requested);
+
+        return Ok(new LoanCreationResponse { LoanId = id, Message = "Loan updated successfully" });
+    }
+
+    [HttpPut("{id}/approve-loan-request")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ApproveLoanRequest(int id)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        await _repo.UpdateStatusAsync(id, LoanStatusEnum.Confirmed);
+
+        return Ok(new LoanCreationResponse { LoanId = id, Message = "Loan updated successfully" });
+    }
+
+
+    [HttpPut("{id}/reject-loan-request")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RejectLoanRequest(int id)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        await _repo.UpdateStatusAsync(id, LoanStatusEnum.Rejected);
+
+        return Ok(new LoanCreationResponse { LoanId = id, Message = "Loan updated successfully" });
     }
 
     [HttpGet("{id}")]
@@ -119,15 +174,6 @@ public class LoanController : ControllerBase
 
         return Ok(loan);
     }
-
-    [HttpPut("{id}/status")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId)
-    {
-        await _repo.UpdateStatusAsync(id, statusId);
-        return Ok(new { message = "Status updated." });
-    }
-
 
     [HttpGet("types")]
     [Authorize]
@@ -151,6 +197,28 @@ public class LoanController : ControllerBase
     {
         var statuses = await _repo.GetLoanStatusesAsync();
         return Ok(statuses);
+    }
+
+
+    private async Task<(bool IsValid, IActionResult? ErrorResult, Loan? Loan)> ValidateLoanOwnership(
+        int loanId,
+        LoanStatusEnum? expectedStatus = null)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out var userId))
+            return (false, Unauthorized(), null);
+
+        var loan = await _repo.GetByIdAsync(loanId);
+        if (loan == null)
+            return (false, NotFound(new { error = "Loan not found." }), null);
+
+        if (loan.UserId != userId)
+            return (false, BadRequest(new { error = "Loan not found or not yours." }), null);
+
+        if (expectedStatus.HasValue && (LoanStatusEnum)loan.StatusId != expectedStatus)
+            return (false, BadRequest(new { error = "Loan is not in the expected status." }), null);
+
+        return (true, null, loan);
     }
 }
 

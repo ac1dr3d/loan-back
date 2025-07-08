@@ -1,4 +1,5 @@
 using Dapper;
+using LoanBack.Enums;
 using LoanBack.Models.Entities;
 using MySqlConnector;
 using System.Data;
@@ -76,12 +77,12 @@ public class LoanRepository : ILoanRepository
         return result.FirstOrDefault();
     }
 
-    public async Task UpdateStatusAsync(int loanId, int newStatusId)
+    public async Task UpdateStatusAsync(int loanId, LoanStatusEnum newStatus)
     {
         using var conn = CreateConnection();
         await conn.ExecuteAsync(
             "sp_UpdateLoanStatus",
-            new { p_LoanId = loanId, p_StatusId = newStatusId },
+            new { p_LoanId = loanId, p_StatusId = newStatus },
             commandType: CommandType.StoredProcedure);
     }
 
@@ -124,6 +125,19 @@ public class LoanRepository : ILoanRepository
         }, commandType: CommandType.StoredProcedure);
 
         return updatedId;
+    }
+
+    public async Task<bool> DeleteAsync(int loanId)
+    {
+        using var conn = CreateConnection();
+
+        var affectedRows = await conn.ExecuteAsync(
+            "sp_DeleteLoan",
+            new { p_LoanId = loanId },
+            commandType: CommandType.StoredProcedure
+        );
+
+        return affectedRows > 0;
     }
 
 }
