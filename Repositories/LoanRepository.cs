@@ -59,19 +59,41 @@ public class LoanRepository : ILoanRepository
         return result;
     }
 
+
+    public async Task<IEnumerable<Loan>> GetLoansByStatusAsync(LoanStatusEnum statusId)
+    {
+        using var conn = CreateConnection();
+
+        var result = await conn.QueryAsync<Loan, LoanType, LoanStatus, Currency, Loan>(
+                    "sp_GetLoansByStatus",
+                    (loan, type, status, currency) =>
+                    {
+                        loan.LoanType = type;
+                        loan.LoanStatus = status;
+                        loan.Currency = currency;
+                        return loan;
+                    },
+                    new { p_StatusId = statusId },
+                    splitOn: "LoanTypeId,StatusId,CurrencyId",
+                    commandType: CommandType.StoredProcedure
+                );
+        return result;
+    }
+
     public async Task<Loan?> GetByIdAsync(int loanId)
     {
         using var conn = CreateConnection();
-        var result = await conn.QueryAsync<Loan, LoanType, LoanStatus, Loan>(
+        var result = await conn.QueryAsync<Loan, LoanType, LoanStatus, Currency, Loan>(
             "sp_GetLoanById",
-            (loan, type, status) =>
+            (loan, type, status, currency) =>
             {
                 loan.LoanType = type;
                 loan.LoanStatus = status;
+                loan.Currency = currency;
                 return loan;
             },
             new { p_LoanId = loanId },
-            splitOn: "LoanTypeId,StatusId",
+            splitOn: "LoanTypeId,StatusId,CurrencyId",
             commandType: CommandType.StoredProcedure);
 
         return result.FirstOrDefault();

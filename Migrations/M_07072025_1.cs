@@ -57,6 +57,7 @@ public class CreateLoanTables : Migration
         // Seed Loan Statuses
         Insert.IntoTable("LoanStatuses").Row(new { Name = "ახალი" });
         Insert.IntoTable("LoanStatuses").Row(new { Name = "გადაგზავნილი" });
+        Insert.IntoTable("LoanStatuses").Row(new { Name = "დამუშავების პროცესში" });
         Insert.IntoTable("LoanStatuses").Row(new { Name = "დამტკიცებული" });
         Insert.IntoTable("LoanStatuses").Row(new { Name = "უარყოფილი" });
 

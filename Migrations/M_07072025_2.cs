@@ -83,6 +83,23 @@ public class CreateLoanProcedures : Migration
         ");
 
         Execute.Sql(@"
+            DROP PROCEDURE IF EXISTS sp_GetLoansByStatus;
+            CREATE PROCEDURE sp_GetLoansByStatus(IN p_StatusId INT)
+            BEGIN
+                SELECT 
+                    l.*, 
+                    t.Id AS LoanTypeId, t.Name AS Name, 
+                    s.Id AS StatusId, s.Name AS Name,
+                    c.Id AS CurrencyId, c.Code AS Code, c.Name AS Name 
+                FROM Loans l
+                JOIN LoanTypes t ON l.LoanTypeId = t.Id
+                JOIN LoanStatuses s ON l.StatusId = s.Id
+                JOIN Currencies c ON l.CurrencyId = c.Id
+                WHERE StatusId = p_StatusId;
+            END;
+        ");
+
+        Execute.Sql(@"
             DROP PROCEDURE IF EXISTS sp_GetCurrencies;
             CREATE PROCEDURE sp_GetCurrencies()
             BEGIN

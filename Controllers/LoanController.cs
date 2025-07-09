@@ -13,10 +13,14 @@ namespace LoanBack.Controllers;
 public class LoanController : ControllerBase
 {
     private readonly ILoanRepository _repo;
+    private readonly IRabbitMqPublisher _mq;
+    private readonly ILoanQueueConsumer _loanQueue;
 
-    public LoanController(ILoanRepository repo)
+    public LoanController(ILoanRepository repo, IRabbitMqPublisher mq, ILoanQueueConsumer loanQueue)
     {
         _repo = repo;
+        _mq = mq;
+        _loanQueue = loanQueue;
     }
 
     [HttpPost("create")]
@@ -121,10 +125,12 @@ public class LoanController : ControllerBase
 
         await _repo.UpdateStatusAsync(id, LoanStatusEnum.Requested);
 
+        _mq.PublishLoanRequest(id); // 🔁 Send to RabbitMQ
+
         return Ok(new LoanCreationResponse { LoanId = id, Message = "Loan updated successfully" });
     }
 
-    [HttpPut("{id}/approve-loan-request")]
+    [HttpPut("{id}/approve-loan")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ApproveLoanRequest(int id)
     {
@@ -141,7 +147,7 @@ public class LoanController : ControllerBase
     }
 
 
-    [HttpPut("{id}/reject-loan-request")]
+    [HttpPut("{id}/reject-loan")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> RejectLoanRequest(int id)
     {
@@ -157,22 +163,38 @@ public class LoanController : ControllerBase
         return Ok(new LoanCreationResponse { LoanId = id, Message = "Loan updated successfully" });
     }
 
-    [HttpGet("{id}")]
-    [Authorize]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("admin/pending-loans")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetPendingLoansFromQueue()
     {
-        var loan = await _repo.GetByIdAsync(id);
-        if (loan == null)
-            return NotFound();
+        var loanIds = await _loanQueue.GetLoanIdsFromQueueAsync();
+        var loansToReturn = new List<Loan>();
 
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdStr, out var userId))
-            return Unauthorized();
+        foreach (var id in loanIds)
+        {
+            var loan = await _repo.GetByIdAsync(id);
+            if (loan != null && (LoanStatusEnum)loan.StatusId == LoanStatusEnum.Requested)
+            {
+                await _repo.UpdateStatusAsync(id, LoanStatusEnum.UnderReview);
+                loan.StatusId = LoanStatusEnum.UnderReview;
+                loan.LoanStatus = new LoanStatus
+                {
+                    Id = (int)LoanStatusEnum.UnderReview,
+                    Name = "დამუშავების პროცესში"
+                };
+                loansToReturn.Add(loan);
+            }
+        }
 
-        if (loan.UserId != userId)
-            return Forbid(); // or Ok if admin allowed
+        return Ok(loansToReturn);
+    }
 
-        return Ok(loan);
+    [HttpGet("admin/under-review-loans")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetUnderReviewLoans()
+    {
+        var loans = await _repo.GetLoansByStatusAsync(LoanStatusEnum.UnderReview);
+        return Ok(loans);
     }
 
     [HttpGet("types")]
